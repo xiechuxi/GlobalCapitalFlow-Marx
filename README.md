@@ -64,47 +64,97 @@
 
 > 本仓库把 skill 放在根目录 `skills/`，不使用 `.github/` 目录。Agent Skills 只从约定目录加载，因此需要执行下面的安装步骤。
 
-### 方式一：安装到用户级（推荐，跨项目可用）
+### 方式一：用户级安装（脚本，跨项目可用）
 
 ```bash
 git clone https://github.com/xiechuxi/GlobalCapitalFlow-Marx.git
 cd GlobalCapitalFlow-Marx
-
-# 默认安装到 ~/.copilot/skills/
-sh skills/global-capital-flow-marx/scripts/install.sh
-
-# 或选择目标
-sh skills/global-capital-flow-marx/scripts/install.sh agents   # ~/.agents/skills/
-sh skills/global-capital-flow-marx/scripts/install.sh claude   # ~/.claude/skills/
-sh skills/global-capital-flow-marx/scripts/install.sh ~/my-skills  # 自定义
 ```
 
-### 方式二：安装到项目级
+| 目标 | 安装目录 | 适用客户端 |
+|---|---|---|
+| `agents` | `~/.agents/skills/` | VS Code、Codex、通用 Agent Skills |
+| `codex` | `~/.agents/skills/` | OpenAI Codex CLI（文档指定的用户级位置） |
+| `copilot` | `~/.copilot/skills/` | GitHub Copilot CLI |
+| `claude` | `~/.claude/skills/` | Claude Code |
+| `hermes` | `~/.hermes/skills/` | Hermes Agent（Nous Research） |
+| `dsh` | `~/.dsh/skills/` | DeepSeek Harness |
+| `workbuddy` | WorkBuddy 插件市场目录 | WorkBuddy（检测不到时自动打包 ZIP） |
+| `<路径>` | `<路径>/global-capital-flow-marx` | 自定义 skills 根目录 |
 
-在本仓库中让 VS Code 直接加载（不会生成 `.github/` 目录）：
+```bash
+sh skills/global-capital-flow-marx/scripts/install.sh agents     # VS Code + Codex
+sh skills/global-capital-flow-marx/scripts/install.sh hermes
+sh skills/global-capital-flow-marx/scripts/install.sh dsh
+sh skills/global-capital-flow-marx/scripts/install.sh claude
+sh skills/global-capital-flow-marx/scripts/install.sh ~/my-skills
+```
+
+### 方式二：各客户端原生方式
+
+**Hermes Agent** —— 走 Skills Hub，自动安全扫描并记录来源：
+
+```bash
+hermes skills install xiechuxi/GlobalCapitalFlow-Marx/skills/global-capital-flow-marx
+
+# 或把本仓库添加为 tap（本仓库根目录就是 skills/ 布局）
+hermes skills tap add xiechuxi/GlobalCapitalFlow-Marx
+hermes skills install xiechuxi/GlobalCapitalFlow-Marx/global-capital-flow-marx
+```
+
+**Codex CLI** —— 仓库级位置是 `.agents/skills/`（从当前目录逐级向上扫描到仓库根）：
 
 ```bash
 sh skills/global-capital-flow-marx/scripts/install.sh .agents/skills
 ```
 
-也可以把整个文件夹复制到你自己的项目：
+**DeepSeek Harness** —— 复制到 `~/.dsh/skills/`，重启 profile 后生效；也可用 `dsh-skills-nexus` 直接登记本仓库：
 
-| 客户端 | 用户级路径 | 项目级路径 |
-|---|---|---|
-| VS Code (Copilot) | `~/.agents/skills/` | `.agents/skills/` |
-| Copilot CLI | `~/.copilot/skills/` | `.github/skills/` |
-| Claude Code | `~/.claude/skills/` | `.claude/skills/` |
-| 其他 Agent Skills 兼容工具 | 依其文档 | `.agents/skills/` |
+```bash
+dsh plugin --profile web add github:xiaxi626/dsh-skills-nexus
+dsh-skills-nexus add github:xiechuxi/GlobalCapitalFlow-Marx --subdir skills/global-capital-flow-marx
+```
+
+**WorkBuddy** —— 优先用图形界面导入，脚本会生成符合上传要求的 ZIP：
+
+```bash
+sh skills/global-capital-flow-marx/scripts/install.sh pack
+# 生成 dist/global-capital-flow-marx.zip
+```
+
+打开 WorkBuddy →「添加技能」→「上传技能」→ 选择该 ZIP。若本机已有插件市场目录，也可执行 `install.sh workbuddy`，按提示在 `~/.workbuddy/settings.json` 的 `enabledPlugins` 中启用。
 
 ### 方式三：手动复制
 
-把 `skills/global-capital-flow-marx/` 整个文件夹复制到上表任一位置。
+把 `skills/global-capital-flow-marx/` 整个文件夹复制到下表中的对应目录即可。
 
 > 注意：文件夹名必须与 `SKILL.md` 中的 `name` 字段一致（`global-capital-flow-marx`），否则不会被加载。
 
+### 客户端兼容性速查
+
+| 客户端 | 用户级 | 项目级 / 仓库级 | 调用方式 |
+|---|---|---|---|
+| VS Code (Copilot) | `~/.agents/skills/` | `.github/skills/`、`.agents/skills/`、`.claude/skills/` | `/global-capital-flow-marx` |
+| Copilot CLI | `~/.copilot/skills/` | `.github/skills/` | `/global-capital-flow-marx` |
+| Claude Code | `~/.claude/skills/` | `.claude/skills/` | `/global-capital-flow-marx` |
+| OpenAI Codex | `$HOME/.agents/skills/` | `.agents/skills/`（逐级向上至仓库根） | `$global-capital-flow-marx` 或 `/skills` |
+| Hermes Agent | `~/.hermes/skills/` | `<repo>/.hermes/skills/`、`<repo>/.agents/skills/` | `/global-capital-flow-marx` |
+| DeepSeek Harness | `~/.dsh/skills/` | 同左（文件系统扫描） | 对话自动匹配 |
+| WorkBuddy | 插件市场目录 | 应用内导入 | 对话自动匹配 |
+
+补充说明：
+
+- **Codex**：管理员级位置为 `/etc/codex/skills`；可用 `~/.codex/config.toml` 的 `[[skills.config]]` 单独禁用某个 skill。
+- **Hermes**：项目级 skills 首次使用需 `hermes skills trust`；其编写规范建议 `description` ≤ 60 字符，本 skill 的描述更详细（用于跨客户端触发匹配），在 Hermes 列表中可能被截断显示，不影响加载。
+- **DeepSeek Harness**：技能名须为 kebab-case（本 skill 已符合），新增技能后需重启 profile 才会被扫描到。
+- **WorkBuddy**：内部把 skill 叫「插件」，目录结构随版本变化，优先使用图形界面导入。
+
 ### 验证安装
 
-新开一个会话，输入 `/global-capital-flow-marx`，能看到该命令即安装成功。
+- 斜杠命令类（VS Code / Copilot CLI / Claude Code / Hermes）：新开会话输入 `/global-capital-flow-marx`。
+- Codex：输入 `$` 查看候选列表，或输入 `/skills`。
+- DeepSeek Harness：重启 profile 后问「你有哪些 skills」。
+- WorkBuddy：技能页「已安装」中出现该技能即可。
 
 ---
 
@@ -181,7 +231,8 @@ GlobalCapitalFlow-Marx/
 │   │   ├── output-template.md      # 输出骨架与 Mermaid 图例
 │   │   └── examples.md             # 降息 / 出口管制两个压缩范例
 │   └── scripts/
-│       └── install.sh              # 用户级安装脚本
+│       └── install.sh              # 多客户端安装脚本 + ZIP 打包
+├── dist/                           # install.sh pack 生成，已 gitignore
 ├── README.md
 └── LICENSE                         # AGPL-3.0
 ```
@@ -207,6 +258,9 @@ GlobalCapitalFlow-Marx/
 
 **Q：能分析个股吗？**
 可以分析个股所处的成本转移位置与卡点，但不会给出买卖建议。个股分析还需要补充财务、治理与估值模型，属于本 Skill 之外的范畴。
+
+**Q：同一个 skill 能同时装到多个客户端吗？**
+可以。`install.sh` 支持 `agents` / `codex` / `copilot` / `claude` / `hermes` / `dsh` / `workbuddy`，同一份内容复制到不同目录即可，互不冲突。目录对照见[客户端兼容性速查](#客户端兼容性速查)。
 
 **Q：为什么放在 `skills/` 而不是 `.github/skills/`？**
 仓库保持根目录 `skills/` 的可见结构，不依赖隐藏目录；需要被 Agent 加载时，用安装脚本复制到 `.agents/skills/` 或用户级目录即可。
